@@ -10,6 +10,7 @@
 const zh = {
     // Ribbons and commands
     ribbonMargin: "批注栏",
+    ribbonAdd: "在光标处添加批注",
     addAnnotation: "添加批注",
     editAtCursor: "编辑光标处批注",
     deleteSelected: "删除选中的批注",
@@ -101,6 +102,7 @@ const zh = {
 const en: typeof zh = {
     // Ribbons and commands
     ribbonMargin: "Annotation margin",
+    ribbonAdd: "Add annotation at cursor",
         addAnnotation: "Add annotation",
         editAtCursor: "Edit annotation at cursor",
         deleteSelected: "Delete selected annotation",

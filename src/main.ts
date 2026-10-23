@@ -198,6 +198,13 @@ export default class InlineAnnotationsPlugin extends Plugin {
     );
     this.addSettingTab(new AnnotationSettingTab(this.app, this));
     this.addRibbonIcon("message-square", t.ribbonMargin, () => void this.toggleMargin());
+    this.addRibbonIcon("message-square-plus", t.ribbonAdd, () => {
+      const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+      if (view?.file && view.getMode() === "source") {
+        return void this.addAnnotation(view.editor, view.file);
+      }
+      new Notice(t.switchToEdit);
+    });
 
     this.addCommand({
       id: "add-annotation",
