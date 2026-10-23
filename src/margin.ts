@@ -1,4 +1,4 @@
-import { MarkdownView, Menu, Notice, TFile, setIcon } from "obsidian";
+import { MarkdownRenderer, MarkdownView, Menu, Notice, TFile, setIcon } from "obsidian";
 import { t } from "./i18n";
 import type { EditorView } from "@codemirror/view";
 import {
@@ -405,7 +405,8 @@ export class MarginPanel {
         else if (e.key === "Escape") cancel.click();
       });
     } else {
-      card.createDiv({ cls: "ann-card-note", text: a.note });
+      const el = card.createDiv({ cls: "ann-card-note" });
+      void MarkdownRenderer.render(plugin.app, a.note, el, file.path, plugin);
     }
 
     if (a.replies.length) {
@@ -423,7 +424,8 @@ export class MarginPanel {
             .updateAnnotation(file, a.id, (cur) => ({ replies: cur.replies.filter((_, j) => j !== i) }))
             .then(() => this.refresh(true));
         });
-        item.createDiv({ cls: "ann-reply-text", text: r.text });
+        const body = item.createDiv({ cls: "ann-reply-text" });
+        void MarkdownRenderer.render(plugin.app, r.text, body, file.path, plugin);
       });
     }
 
