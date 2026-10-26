@@ -363,3 +363,67 @@ span.ann-s {
 .ann-popover-body :is(ul, ol):last-child {
     margin-bottom: 0;
 }
+
+/* ---- Unread comments ---- */
+.ann-badge-new {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-weight: var(--font-semibold, 600);
+}
+.ann-card.is-new {
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+.ann-reply.is-new .ann-reply-text {
+  color: var(--text-normal);
+}
+/* Floating pill over the margin: unread comments in other notes. */
+.ann-inbox-pill {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 2;
+  max-width: calc(100% - 24px);
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: var(--font-ui-small, 13px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: var(--shadow-s);
+  cursor: pointer;
+}
+.ann-notice-click {
+  cursor: pointer;
+}
+.ann-notice-body {
+  margin-top: 4px;
+  white-space: pre-line;
+}
+.ann-unread-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.ann-unread-note {
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.ann-unread-head .ann-time {
+  margin-left: auto;
+  flex: none;
+}
+.ann-unread-text {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small, 13px);
+}
+.ann-unread-markall {
+  align-self: flex-end;
+  margin: 8px 12px 12px;
+}
