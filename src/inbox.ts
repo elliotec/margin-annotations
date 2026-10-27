@@ -2,8 +2,11 @@ import { Notice, Platform, SuggestModal, TFile, debounce } from "obsidian";
 import type { App, TAbstractFile } from "obsidian";
 import { parseAnnotations } from "./core";
 import { fmt, t } from "./i18n";
-import { CommentItem, byNewest, commentItems, excerpt, isUnread } from "./unread";
+import { CommentItem, byNewest, commentItems, excerpt, isUnread, sameAuthor } from "./unread";
 import type InlineAnnotationsPlugin from "./main";
+
+/** How long comment notices stay up; clicking one opens the comment and dismisses it sooner. */
+const NOTICE_MS = 60_000;
 
 // Unread comments from other annotators. Keeps an index of every comment in the vault, the set of comment keys
 // this device has seen (stored in the plugin's data.json, so each device tracks its own), and announces comments
@@ -54,7 +57,7 @@ export class Inbox {
     this.plugin.margin.sync(true);
     if (unread.length && this.plugin.settings.notify) {
       const n = unread.length;
-      const notice = new Notice(n === 1 ? t.unreadOnOpenOne : fmt(t.unreadOnOpenMany, { n }), 10000);
+      const notice = new Notice(n === 1 ? t.unreadOnOpenOne : fmt(t.unreadOnOpenMany, { n }), NOTICE_MS);
       notice.messageEl.addClass("ann-notice-click");
       notice.messageEl.addEventListener("click", () => this.openList());
     }
@@ -68,13 +71,16 @@ export class Inbox {
   async onModify(file: TAbstractFile) {
     if (!(file instanceof TFile) || file.extension !== "md") return;
     const items = await this.read(file);
+    const before = new Set((this.index.get(file.path) ?? []).map((i) => i.key));
     if (items.length) this.index.set(file.path, items);
     else this.index.delete(file.path);
     if (!this.ready) return;
-    const fresh = items.filter((i) => this.isUnread(i) && !this.announced.has(i.key));
+    // Announce comments that weren't in this note before, by anyone else. Not "unread": when the note is open
+    // with the margin showing, the margin may already have marked the comment seen, and it still gets a pop-up.
+    const me = this.me();
+    const fresh = items.filter((i) => !before.has(i.key) && !this.announced.has(i.key) && !sameAuthor(i.author, me));
     fresh.forEach((i) => this.announced.add(i.key));
-    // No pop-up for the note already on screen with the margin open: its cards show the "New" badge instead.
-    if (fresh.length && !this.plugin.margin.isShowing(file.path)) this.announce(fresh);
+    if (fresh.length) this.announce(fresh);
     this.changed();
   }
 
@@ -185,7 +191,7 @@ export class Inbox {
       f.createEl("strong", { text: title });
       f.createDiv({ text: body, cls: "ann-notice-body" });
     });
-    const notice = new Notice(frag, 10000);
+    const notice = new Notice(frag, NOTICE_MS);
     notice.messageEl.addClass("ann-notice-click");
     notice.messageEl.addEventListener("click", open);
   }

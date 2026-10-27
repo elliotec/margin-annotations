@@ -129,10 +129,13 @@ span.ann-s {
   padding: 0 !important;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .ann-margin {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -376,22 +379,19 @@ span.ann-s {
 .ann-reply.is-new .ann-reply-text {
   color: var(--text-normal);
 }
-/* Floating pill over the margin: unread comments in other notes. */
+/* Bar below the margin: unread comments in other notes. In the layout rather than floating, at the bottom since
+   Obsidian's notices cover the top of the right sidebar, lifted above the status bar (--ann-pill-clear, set
+   from JS). Wraps in a narrow sidebar. */
 .ann-inbox-pill {
-  position: absolute;
-  left: 50%;
-  bottom: 12px;
-  transform: translateX(-50%);
-  z-index: 2;
-  max-width: calc(100% - 24px);
-  padding: 4px 12px;
-  border-radius: 999px;
+  flex: none;
+  margin: 4px 10px calc(8px + var(--ann-pill-clear, 0px));
+  padding: 5px 12px;
+  border-radius: var(--radius-l, 12px);
   background: var(--interactive-accent);
   color: var(--text-on-accent);
   font-size: var(--font-ui-small, 13px);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
+  text-align: center;
   box-shadow: var(--shadow-s);
   cursor: pointer;
 }

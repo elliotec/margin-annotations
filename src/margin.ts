@@ -44,11 +44,12 @@ export class MarginPanel {
   private draftEl: HTMLElement | null = null;
   private draftCleanup: (() => void) | null = null;
   private cards = new Map<string, HTMLElement>();
-  /** Comment keys that were unread when this note was shown; their "New" badges last until another note opens. */
+  /** Comment keys that were unread when this note was shown; a card's "New" badges last until it's interacted with. */
   private fresh = new Set<string>();
   /** The note has unread comments but the margin was hidden, so they haven't been marked seen yet. */
   private unseenWhileHidden = false;
-  /** Floating "N new in other notes" pill, outside the scrolling margin so it doesn't shift the cards. */
+  /** "N new in other notes" bar below the scrolling margin (Obsidian's notices cover the top of the right
+   *  sidebar). Cards are positioned relative to the margin itself, so the bar doesn't misalign them. */
   private pill: HTMLElement;
   private offInbox: () => void;
   private ro: ResizeObserver;
@@ -212,14 +213,29 @@ export class MarginPanel {
     this.plugin.inbox.markSeen(unread.map((i) => i.key));
   }
 
+  /** Desktop's status bar floats over the bottom of the right sidebar: lift the bar above it. */
+  private clearStatusBar() {
+    const host = this.pill.parentElement;
+    const bar = this.pill.ownerDocument.querySelector<HTMLElement>(".status-bar");
+    let gap = 0;
+    if (host && bar?.isShown()) {
+      const h = host.getBoundingClientRect();
+      const b = bar.getBoundingClientRect();
+      if (b.left < h.right && b.right > h.left && b.top < h.bottom) gap = Math.ceil(h.bottom - b.top);
+    }
+    this.pill.setCssProps({ "--ann-pill-clear": `${gap}px` });
+  }
+
   private updatePill() {
     const n = this.plugin.inbox.unread(this.filePath || undefined).length;
     this.pill.toggle(n > 0);
     this.pill.setText(n === 1 ? t.unreadElsewhereOne : fmt(t.unreadElsewhereMany, { n }));
+    if (n > 0) this.clearStatusBar();
   }
 
   /** Called periodically: catches source/reading mode switches and lazily rendered reading-mode sections. */
   tick() {
+    if (this.pill.isShown()) this.clearStatusBar(); // the status bar's width changes with its contents
     if (this.view && this.view.getMode() !== this.mode) void this.refresh(true);
     else if (this.unseenWhileHidden && this.isVisible()) void this.refresh(true);
     else this.schedule();
@@ -240,11 +256,27 @@ export class MarginPanel {
   }
 
   setActive(id: string | null) {
+    // Selecting a card (clicking it, the cursor entering its text, replying) means it's been read.
+    if (id) this.clearNew(id);
     if (this.activeId === id) return;
     this.activeId = id;
     this.cards.forEach((c, cid) => c.toggleClass("is-active", cid === id));
     if (id && !this.follow) this.cards.get(id)?.scrollIntoView({ block: "nearest" });
     this.schedule();
+  }
+
+  /** Drop the "New" badges of one annotation and its replies, in place (no re-render). */
+  private clearNew(id: string) {
+    const a = this.find(id);
+    if (!a) return;
+    let changed = this.fresh.delete(annotationKey(a));
+    for (const r of a.replies) changed = this.fresh.delete(replyKey(a, r)) || changed;
+    if (!changed) return;
+    const card = this.cards.get(id);
+    if (!card) return;
+    card.removeClass("is-new");
+    card.querySelectorAll(".ann-badge-new").forEach((b) => b.remove());
+    card.querySelectorAll(".ann-reply.is-new").forEach((r) => r.removeClass("is-new"));
   }
 
   /** Cursor moved in the editor: activate the innermost annotation under it. */
@@ -723,11 +755,6 @@ export class MarginManager {
     const id = this.pendingFocus.id;
     this.pendingFocus = null;
     return id;
-  }
-
-  /** The margin is open, visible, and following `path`. */
-  isShowing(path: string): boolean {
-    return !!this.panel && this.panel.view?.file?.path === path && this.panel.isVisible();
   }
 
   refreshFile(path: string) {
